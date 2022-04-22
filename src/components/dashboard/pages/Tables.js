@@ -9,6 +9,7 @@ import {
   Radio,
   Input,
   Spin,
+  Tooltip,
 
 } from "antd";
 import React, { useState, useEffect } from 'react';
@@ -23,6 +24,137 @@ import Main from "../layout/Main";
 
 
 function Tables() {
+  const [posts,setPosts]=useState([])
+  const [loading, setLoading]=useState(false)
+  
+  function fetchData(){
+
+    axios.get('http://localhost:8052/api/fullProdApi').then(res=>{
+        console.log(res.data)
+        setPosts(res.data)
+        posts != null ? setLoading(true) : setLoading(false)
+    })
+    .catch(err=>{
+        console.log(err)
+    })
+  }
+  
+  const [editingStudent, setEditingStudent] = useState(null);
+
+  useEffect(()=>{
+    fetchData()
+},[])
+
+
+  
+
+  const [form] = Form.useForm();
+
+  const [conditionButton, setConditionButton] = useState("");
+  const [titleModal, setTitle] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalVisibleInsert, setIsModalVisibleInsert] = useState(false);
+  const showModal = (record,mode) => {
+    
+    
+    //setEditingStudent({ ...record });
+    if (mode=="edit"){
+      setConditionButton("handleOk");
+      setIsModalVisible(true);
+    form.setFieldsValue(record);
+  //  var title=form.getFieldValue("name")
+    setTitle("Modifier Un produit :"+form.getFieldValue("name"))
+  }
+
+  if (mode=="add"){
+    setConditionButton("handleInsert");
+    setIsModalVisible(true);
+    form.setFieldsValue(record);
+    setTitle("Ajouter Un Produit")
+  }
+    // console.log(id);
+  };
+
+
+  const ConditionMode =(r,type)=>{
+
+    if (type=="handleInsert"){
+
+      handleInsert(r);
+
+    }
+
+    if (type=="handleOk"){
+      handleOk(r);
+
+    }
+
+  }
+
+
+  const ModalOn = () => {
+    setIsModalVisibleInsert(true);
+  };
+
+  const handleInsert=(r)=>{
+    //console.log(r);
+    axios.post('http://localhost:8052/api/addprod', r)
+    .then(response=>{
+      setPosts(posts.concat(response.data))
+     
+    })
+    setIsModalVisible(false);
+   
+  
+
+  }
+  //////////////////whyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+  const handleOk = (r) => {
+   
+    axios.put("http://localhost:8052/api/UpdateProd",r).then(res=>{
+      
+      fetchData()
+        setIsModalVisible(false);
+      
+
+    }
+    
+    
+    
+    
+    ).catch(err=>console.error(err))
+
+  
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    setEditingStudent(null);
+  };
+
+
+  const handleCancelInsert = () => {
+    setIsModalVisibleInsert(false);
+    setEditingStudent(null);
+  };
+
+  const deleteProduct=(Id)=>{
+    Modal.confirm({
+      title: "CONFIRMATION",
+      icon: <ExclamationCircleOutlined />,
+      content: "Confirmation de la supprission",
+      okType: "danger",
+      okText: "OUI",
+      cancelText: "annuler",
+      onOk: () => {
+    axios.delete("http://localhost:8052/api/deleteprod/"+Id).then((response)=>
+    {
+      setPosts(posts.filter(post=>post.id!==Id));
+    })
+
+    }});
+}
+
   const columns = [
     {
       title: "AUTHOR",
@@ -55,8 +187,12 @@ function Tables() {
             <div className="ant-employed ">
               <span></span>
               <div className="d-flex ">
-                <EditOutlined className="Action_edit" onClick={() => showModal(record)}/>
-                <DeleteOutlined className="Action_delete" onClick={() => deleteProduct(record.id)}/>
+               <Tooltip title="Mettre a jour">
+                <EditOutlined className="Action_edit" onClick={() => showModal(record,"edit")}/>
+                </Tooltip>
+                  <Tooltip title="Supprimer">
+                  <DeleteOutlined onClick={() => deleteProduct(record.id)} />
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -64,118 +200,11 @@ function Tables() {
   
   ];
 
-  //Delete
-  const deleteProduct=(Id)=>{
-    Modal.confirm({
-      title: "CONFIRMATION",
-      icon: <ExclamationCircleOutlined />,
-      content: "Confirmation de la supprission",
-      okType: "danger",
-      okText: "OUI",
-      cancelText: "annuler",
-      onOk: () => {
-    axios.delete("https://app-crudmemlk.herokuapp.com/api/deleteprod/"+Id).then((response)=>
-    {
-      setData(data.filter(item=>item.id!==Id));
-    })
-
-    }});
-}
-
-
-  const [loading, setLoading]=useState(false)
-  const [data, setData]=useState([
-
-  ])
-
-  //Fetch data
-  useEffect(()=>{ 
-    axios.get('https://app-crudmemlk.herokuapp.com/api/fullProdApi').then(response =>{
-      // console.log('response==',response.data)
-      setData(data.concat(response.data))
-      data != null ? setLoading(true) : setLoading(false)
-      console.log('data',data)
-    }).catch(error =>{
-        console.log(error)
-    })
-  },[])
-
-
-
-  //Update
-  const handleOk = (r) => {
-   
-    axios.put("https://app-crudmemlk.herokuapp.com/api/UpdateProd",r).then(res=>{
-      
-       var newData=data;
-    
-       newData.map(
-        post=>{
-          if(r.id===post.id){
-           //post.id=r.id;
-            post.name=r.name;
-            
-            post.brand=r.brand;
-            post.madein=r.madein;
-            post.price=r.price;
-          }
-        }
-      )     
-      
-      console.log(newData)
-      setData(newData)
-      console.log(data)
-        setIsModalVisible(false);
-
-    }
-
-    ).catch(err=>console.error(err))
-  };
   
-  //Insert
-  const ModalOn = () => {
-    setIsModalVisibleInsert(true);
-  };
-  const handleCancelInsert = () => {
-    setIsModalVisibleInsert(false);
-    setEditingStudent(null);
-  };
-
-  const [isModalVisibleInsert, setIsModalVisibleInsert] = useState(false);
-  const handleInsert=(r)=>{
-    //console.log(r);
-    axios.post('https://app-crudmemlk.herokuapp.com/api/addprod', r)
-    .then(response=>{
-      setData(data.concat(response.data))
-    })
-    setIsModalVisibleInsert(false);
-  }
-
-
-
-
-  //Modal
-  //Update
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    setEditingStudent(null);
-  };
-
-  const [form] = Form.useForm();
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
-  const showModal = (record) => {
-    setIsModalVisible(true);
-    setEditingStudent({ ...record });
-    form.setFieldsValue(record);
-  };
-
-
 
   return (
     <Main>
-    <Button onClick={ModalOn} className="Floating " type="primary" shape="round" icon={<AppstoreAddOutlined />}/>
+    <Button onClick={() => showModal(null,"add")} className="Floating " type="primary" shape="round" icon={<AppstoreAddOutlined />}/>
       <div className="tabled fs-3">
         <Row className="" gutter={[24, 0]}>
           <Col  xs="24" xl={24}>
@@ -191,7 +220,7 @@ function Tables() {
               <div className="table-responsive">
                 <Table
                   columns={columns}
-                  dataSource={data}
+                  dataSource={posts}
                   pagination={false}
                   className="ant-border-space"
                 />
@@ -200,68 +229,50 @@ function Tables() {
           </Col>
           </Row>
       </div>
-      <Modal title="Add" visible={isModalVisible ? isModalVisible : isModalVisibleInsert} onOk={()=>isModalVisible ?handleOk(editingStudent) : handleInsert(editingStudent)} onCancel={isModalVisible ? handleCancel: handleCancelInsert}>
+      <Modal 
+      title={titleModal}
+      visible={isModalVisible}
+      
+      onOk={() => ConditionMode(form.getFieldsValue(true),conditionButton)}
+      onCancel={handleCancel}
+      
+      >
         <Form
         form={form}
         layout="vertical"
         >
           <Form.Item
-          readOnly
+          
           label="Id"
+          name="id"
           >
-            <Input placeholder="Id"
-
-            value={
-              isModalVisible ? editingStudent?.id :'Auto'
-            }
-            />
+            <Input 
+            readOnly/>
           </Form.Item>
           <Form.Item
             label="Name"
+            name="name"
             >
-            <Input placeholder="Name" 
-            onChange={(e) => {
-              setEditingStudent((pre) => {
-                return { ...pre, name: e.target.value };
-              });
-            }}
-            value={editingStudent?.name}
+            <Input 
             />
           </Form.Item>
           <Form.Item
             label="Brand"
-          >
-            <Input placeholder="Brand" 
-            value={editingStudent?.brand}
-            onChange={(e) => {
-              setEditingStudent((pre) => {
-                return { ...pre, brand: e.target.value };
-              });
-            }}
+          name="brand">
+            <Input 
             />
           </Form.Item>
           <Form.Item
           label="Price"
+          name="price"
           >
-            <Input placeholder="Price" 
-              value={editingStudent?.price}
-              onChange={(e) => {
-                setEditingStudent((pre) => {
-                  return { ...pre, price: e.target.value };
-                });
-              }}
+            <Input 
             />
           </Form.Item>
           <Form.Item
           label="Made in"
-          >
-            <Input placeholder="Made in"
-            value={editingStudent?.madein}
-            onChange={(e) => {
-              setEditingStudent((pre) => {
-                return { ...pre, madein: e.target.value };
-              });
-            }} 
+          name="madein">
+            <Input 
             />
           </Form.Item>
         </Form>
